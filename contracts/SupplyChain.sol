@@ -52,7 +52,9 @@ contract SupplyChain {
   event LogReceived (uint sku);
 
 /* Create a modifer that checks if the msg.sender is the owner of the contract */
-  modifier verifyOwner (address _address) { require(msg.sender == owner); _;}
+  modifier verifyOwner (uint _sku) { 
+    Item storage j = items[_sku];
+    require(msg.sender == j.seller); _;}
   modifier verifyCaller (address _address) { require (msg.sender == _address); _;}
   modifier paidEnough(uint _price) { require(msg.value >= _price); _;}
   modifier checkValue(uint _sku) {
@@ -107,11 +109,11 @@ contract SupplyChain {
     to Sold. Be careful, this function should use 3 modifiers to check if the item is for sale,
     if the buyer paid enough, and check the value after the function is called to make sure the buyer is
     refunded any excess ether sent. Remember to call the event associated with this function!*/
-  function buyItem(uint _sku, uint _price)
+  function buyItem(uint _sku)
     public
     payable
     forSale(_sku)
-    paidEnough(_price)
+    paidEnough(msg.value)
     checkValue(_sku)
   {
     Item storage j = items[_sku];
@@ -123,10 +125,10 @@ contract SupplyChain {
 
   /* Add 2 modifiers to check if the item is sold already, and that the person calling this function
   is the seller. Change the state of the item to shipped. Remember to call the event associated with this function!*/
-  function shipItem(uint _sku, address _address)
+  function shipItem(uint _sku)
     public
     sold(_sku)
-    verifyOwner(_address)
+    verifyOwner(_sku)
   {
     Item storage j = items[_sku];
     j.state = State.Shipped;
@@ -135,12 +137,12 @@ contract SupplyChain {
 
   /* Add 2 modifiers to check if the item is shipped already, and that the person calling this function
   is the buyer. Change the state of the item to received. Remember to call the event associated with this function!*/
-  function receiveItem(uint _sku, address _address)
+  function receiveItem(uint _sku)
     public
     shipped(_sku)
-    verifyCaller(_address)
   {
     Item storage j = items[_sku];
+    require(j.buyer  == msg.sender);
     j.state = State.Received;
     emit LogReceived (_sku);
   }
